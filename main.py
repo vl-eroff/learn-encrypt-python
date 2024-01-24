@@ -1,109 +1,162 @@
-import tkinter as tk
-from tkinter import filedialog
-from tkinter import Menu
+import sys
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTextEdit, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QFileDialog, QCheckBox, QDialog, QLineEdit
 
-def encrypt_decrypt(text, key, encrypt=True):
-    result = ""
-    key = [int(digit) for digit in str(key)]
-    key_len = len(key)
-    
-    for i, char in enumerate(text):
-        if char.isalpha():
-            shift = key[i % key_len] if encrypt else -key[i % key_len]
-            result += chr((ord(char) - ord('А' if char.isupper() else 'а') + shift) % 33 + ord('А' if char.isupper() else 'а'))
-        else:
-            result += char
-            
-    return result
+class GronsfeldCipherApp(QMainWindow):
+    def __init__(self):
+        super().__init__()
 
-def process_cipher():
-    text = input_text.get("1.0", "end-1c")
-    key = key_entry.get()
-    is_encrypt = encrypt_var.get()
-    
-    result = encrypt_decrypt(text, key, is_encrypt)
-    
-    output_text.delete("1.0", tk.END)
-    output_text.insert(tk.END, result)
+        self.init_ui()
 
-def open_file():
-    file_path = tk.filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
-    if file_path:
-        with open(file_path, "r", encoding="utf8") as file:
-            content = file.read()
-            input_text.delete("1.0", tk.END)
-            input_text.insert(tk.END, content)
+    def init_ui(self):
+        self.setWindowTitle('Gronsfeld Cipher')
+        self.setGeometry(100, 100, 800, 400)
 
-def save_file():
-    file_path = tk.filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Text files", "*.txt")])
-    if file_path:
-        content = output_text.get("1.0", tk.END)
-        with open(file_path, "w", encoding="utf8") as file:
-            file.write(content)
+        # Input text
+        input_label = QLabel('Исходный текст:')
+        self.input_text = QTextEdit(self)
 
-def clear_fields():
-    input_text.delete("1.0", tk.END)
-    key_entry.delete(0, tk.END)
-    output_text.delete("1.0", tk.END)
+        # Key entry
+        key_label = QLabel('Ключ:')
+        self.key_entry = QLineEdit(self)
+        self.key_entry.setText("2015")
 
-def open_about_window():
-    about_window = tk.Toplevel(root)
-    about_window.title("About")
-    
-    about_label = tk.Label(about_window, text="This is a Gronsfeld Cipher application.")
-    about_label.pack(padx=10, pady=10)
-    
-    close_button = tk.Button(about_window, text="Close", command=about_window.destroy)
-    close_button.pack(pady=10)
+        # Encryption/Decryption choice
+        self.encrypt_check = QCheckBox('Расшифровать', self)
 
-# GUI setup
-root = tk.Tk()
-root.title("Gronsfeld Cipher")
-root.resizable(False, False)
+        # Output text
+        output_label = QLabel('Результат:')
+        self.output_text = QTextEdit(self)
 
-# Menu bar
-menu_bar = Menu(root)
-root.config(menu=menu_bar)
-file_menu = Menu(menu_bar, tearoff=False)
+        # Buttons
+        process_button = QPushButton('Преобразовать', self)
+        process_button.clicked.connect(self.process_cipher)
 
-# Open, Save and Exit buttons
-file_menu.add_command(label="Открыть", command=open_file)
-file_menu.add_command(label="Сохранить", command=save_file)
-file_menu.add_command(label="Выход", command=root.destroy)
-menu_bar.add_cascade(label="Файл", menu=file_menu)
+        clear_button = QPushButton('Очистить поля', self)
+        clear_button.clicked.connect(self.clear_fields)
 
-# About option
-menu_bar.add_command(label="О программе", command=open_about_window)
+        # Menu bar
+        menubar = self.menuBar()
+        file_menu = menubar.addMenu('Файл')
 
-# Input text
-input_label = tk.Label(root, text="Исходный текст:")
-input_label.grid(row=0, column=0, padx=5, pady=5)
-input_text = tk.Text(root, height=5, width=50)
-input_text.grid(row=0, column=1, padx=5, pady=5)
+        file_menu.addAction('Открыть', self.open_file)
+        file_menu.addAction('Сохранить', self.save_file)
+        file_menu.addAction('Выход', self.close)
 
-# Key entry
-key_label = tk.Label(root, text="Ключ:")
-key_label.grid(row=1, column=0, padx=5, pady=5)
-key_entry = tk.Entry(root)
-key_entry.grid(row=1, column=1, padx=5, pady=5)
+        # About option
+        menubar.addAction('О программе', self.open_about_window)
 
-# Encryption/Decryption choice
-encrypt_var = tk.BooleanVar()
-encrypt_check = tk.Checkbutton(root, text="Расшифровать", variable=encrypt_var)
-encrypt_check.grid(row=2, column=1, padx=5, pady=5)
+        # Layout
+        main_layout = QHBoxLayout()
 
-# Output text
-output_label = tk.Label(root, text="Результат:")
-output_label.grid(row=3, column=0, padx=5, pady=5)
-output_text = tk.Text(root, height=5, width=50)
-output_text.grid(row=3, column=1, padx=5, pady=5)
+        left_layout = QVBoxLayout()
+        left_layout.addWidget(input_label)
+        left_layout.addWidget(self.input_text)
+        left_layout.addWidget(key_label)
+        left_layout.addWidget(self.key_entry)
+        left_layout.addWidget(self.encrypt_check)
 
-# Process button
-process_button = tk.Button(root, text="Преобразовать", command=process_cipher)
-process_button.grid(row=4, column=1, padx=5, pady=10)
+        right_layout = QVBoxLayout()
+        right_layout.addWidget(output_label)
+        right_layout.addWidget(self.output_text)
 
-# Clear Fields button
-clear_button = tk.Button(root, text="Очистить поля", command=clear_fields)
-clear_button.grid(row=6, column=1, padx=5, pady=10)
+        button_layout = QVBoxLayout()
+        button_layout.addStretch()
+        button_layout.addWidget(process_button)
+        button_layout.addWidget(clear_button)
 
-root.mainloop()
+        main_layout.addLayout(left_layout)
+        main_layout.addLayout(right_layout)
+        main_layout.addLayout(button_layout)
+
+        central_widget = QWidget()
+        central_widget.setLayout(main_layout)
+        self.setCentralWidget(central_widget)
+
+    def process_cipher(self):
+        text = self.input_text.toPlainText()
+        key = self.key_entry.text()
+        is_encrypt = not self.encrypt_check.isChecked()
+
+        result = self.encrypt_decrypt(text, key, is_encrypt)
+
+        self.output_text.clear()
+        self.output_text.insertPlainText(result)
+
+    def open_file(self):
+        file_dialog = QFileDialog()
+        file_path, _ = file_dialog.getOpenFileName(self, 'Открыть файл', '', 'Text files (*.txt)')
+        if file_path:
+            with open(file_path, 'r', encoding='utf-8') as file:
+                content = file.read()
+                self.input_text.clear()
+                self.input_text.insertPlainText(content)
+
+    def save_file(self):
+        file_dialog = QFileDialog()
+        file_path, _ = file_dialog.getSaveFileName(self, 'Сохранить файл', '', 'Text files (*.txt)')
+        if file_path:
+            content = self.output_text.toPlainText()
+            with open(file_path, 'w', encoding='utf-8') as file:
+                file.write(content)
+
+    def clear_fields(self):
+        self.input_text.clear()
+        self.key_entry.clear()
+        self.output_text.clear()
+
+    def open_about_window(self):
+        about_window = AboutWindow()
+        about_window.exec_()
+
+    @staticmethod
+    def encrypt_decrypt(text, key, encrypt=True):
+        result = ''
+        key = [int(digit) for digit in str(key)]
+        key_len = len(key)
+
+        for i, char in enumerate(text):
+            if char.isalpha():
+                shift = key[i % key_len] if encrypt else -key[i % key_len]
+                result += chr((ord(char) - ord('А' if char.isupper() else 'а') + shift) % 33 + ord('А' if char.isupper() else 'а'))
+            else:
+                result += char
+
+        return result
+
+
+class AboutWindow(QDialog):
+    def __init__(self):
+        super().__init__()
+
+        self.init_ui()
+
+    def init_ui(self):
+        self.setWindowTitle('About')
+        self.setGeometry(200, 200, 400, 300)
+
+        about_label = QLabel('Это приложение для шифрования методом Гронсфельда', self)
+
+        html_content = ""
+        with open('./about.html', 'r', encoding="utf8") as file:
+            html_content = file.read()
+
+        about_text = QTextEdit(self)
+        about_text.setHtml(html_content)
+        about_text.setReadOnly(True)
+
+        close_button = QPushButton('Закрыть', self)
+        close_button.clicked.connect(self.close)
+
+        layout = QVBoxLayout()
+        layout.addWidget(about_label)
+        layout.addWidget(about_text)
+        layout.addWidget(close_button)
+
+        self.setLayout(layout)
+
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    main_window = GronsfeldCipherApp()
+    main_window.show()
+    sys.exit(app.exec_())
